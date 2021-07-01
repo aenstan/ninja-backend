@@ -1,9 +1,10 @@
 'use strict';
 
-import cors from '@koa/cors';
+// import cors from '@koa/cors';
 import Router from '@koa/router';
 import Koa from 'koa';
 import body from 'koa-body';
+import serve from 'koa-static';
 import User from './user.js';
 
 // Create express instance
@@ -33,7 +34,10 @@ const handler = async (ctx, next) => {
   }
 };
 
-app.use(cors()).use(handler).use(router.routes()).use(router.allowedMethods());
+app.use(serve('static'));
+// app.use(cors())
+app.use(handler);
+app.use(router.routes()).use(router.allowedMethods());
 
 router.get('/api/status', (ctx) => {
   ctx.body = 'Ninja is already.';
