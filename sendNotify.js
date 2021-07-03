@@ -719,7 +719,6 @@ async function pushPlusSingleNotify(text, desp) {
       matchAll.map(async (item) => {
         const token = process.env[`PUSH_PLUS_TOKEN${item[1]}`];
         if (token) {
-          console.log(token);
           const content = item[0].replace(/[\n\r]/g, '<br>'); // 默认为html, 不支持plaintext
           const response = await got.post('https://www.pushplus.plus/send', {
             json: {
