@@ -40,7 +40,10 @@ app.use(handler);
 app.use(router.routes()).use(router.allowedMethods());
 
 router.get('/api/status', (ctx) => {
-  ctx.body = 'Ninja is already.';
+  ctx.body = {
+    code: 200,
+    message: 'Ninja is already.'
+  };
 });
 
 router.get('/api/info', async (ctx) => {
