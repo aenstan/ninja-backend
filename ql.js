@@ -1,11 +1,9 @@
 'use strict';
 
-import axios from 'axios';
-import dotenv from 'dotenv';
-import { readFile } from 'fs/promises';
-import path from 'path';
-
-dotenv.config();
+const axios = require('axios');
+require('dotenv').config();
+const { readFile } = require('fs/promises');
+const path = require('path');
 
 const qlDir = process.env.QL_DIR || '/ql';
 const authFile = path.join(qlDir, 'config/auth.json');
@@ -16,7 +14,7 @@ async function getToken() {
   return authConfig.token;
 }
 
-export async function getEnvs() {
+module.exports.getEnvs = async () => {
   const token = await getToken();
   const response = await axios.get('/api/envs', {
     params: {
@@ -30,14 +28,14 @@ export async function getEnvs() {
     },
   });
   return response.data.data;
-}
+};
 
-export async function getEnvsCount() {
-  const data = await getEnvs();
+module.exports.getEnvsCount = async () => {
+  const data = await this.getEnvs();
   return data.length;
-}
+};
 
-export async function addEnv(cookie) {
+module.exports.addEnv = async (cookie) => {
   const token = await getToken();
   const response = await axios({
     method: 'post',
@@ -55,9 +53,9 @@ export async function addEnv(cookie) {
     },
   });
   return response.data;
-}
+};
 
-export async function updateEnv(cookie, eid, pushToken) {
+module.exports.updateEnv = async (cookie, eid, pushToken) => {
   const token = await getToken();
   const response = await axios({
     method: 'put',
@@ -77,9 +75,9 @@ export async function updateEnv(cookie, eid, pushToken) {
     },
   });
   return response.data;
-}
+};
 
-export async function delEnv(eid) {
+module.exports.delEnv = async (eid) => {
   const token = await getToken();
   const response = await axios({
     method: 'delete',
@@ -94,4 +92,4 @@ export async function delEnv(eid) {
     },
   });
   return response.data;
-}
+};

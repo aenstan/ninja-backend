@@ -1,11 +1,11 @@
 'use strict';
 
-// import cors from '@koa/cors';
-import Router from '@koa/router';
-import Koa from 'koa';
-import body from 'koa-body';
-import serve from 'koa-static';
-import User from './user.js';
+const Koa = require('koa');
+const cors = require('@koa/cors');
+const Router = require('@koa/router');
+const body = require('koa-body');
+const serve = require('koa-static');
+const User = require('./user');
 
 // Create express instance
 const app = new Koa();
@@ -20,7 +20,7 @@ const handler = async (ctx, next) => {
     };
     await next();
     ctx.body.code = ctx.body.code || ctx.status;
-    if (ctx.body?.data?.message) {
+    if (ctx.body.data?.message) {
       ctx.body.message = ctx.body.data.message;
       ctx.body.data.message = undefined;
     }
@@ -35,7 +35,7 @@ const handler = async (ctx, next) => {
 };
 
 app.use(serve('static'));
-// app.use(cors())
+app.use(cors())
 app.use(handler);
 app.use(router.routes()).use(router.allowedMethods());
 

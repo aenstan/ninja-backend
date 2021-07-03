@@ -1,13 +1,12 @@
 /* eslint-disable camelcase */
 'use strict';
 
-import axios from 'axios';
-import dotenv from 'dotenv';
-import QRCode from 'qrcode';
-import { addEnv, delEnv, getEnvs, getEnvsCount, updateEnv } from './ql.js';
+const axios = require('axios');
+require('dotenv').config();
+const QRCode = require('qrcode');
+const { addEnv, delEnv, getEnvs, getEnvsCount, updateEnv } = require('./ql');
 
-dotenv.config();
-export default class User {
+module.exports = class User {
   pt_key;
   pt_pin;
   cookie;
@@ -266,7 +265,7 @@ export default class User {
     if (!response.data.data?.userInfo) {
       throw new UserError('获取用户信息失败，请检查您的 cookie ！', 201, 200);
     }
-    this.nickName = response.data.data?.userInfo.baseInfo.nickname || this.pt_pin;
+    this.nickName = response.data.data.userInfo.baseInfo.nickname || this.pt_pin;
   }
 
   #formatSetCookies(headers, body) {
@@ -283,7 +282,7 @@ export default class User {
       resolve();
     });
   }
-}
+};
 
 class UserError extends Error {
   constructor(message, status, statusCode) {
