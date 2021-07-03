@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 get_push_tokens() {
     local currentTimeStamp=$(date +%s)
     local api=$(
@@ -19,10 +21,10 @@ get_push_tokens() {
             for ((i = 1; i <= $user_sum; i++)); do
                 for ((j = i; j <= $data_count; j++)); do
                     local cookie=$(echo $data | jq .[$j-1].cookie | sed 's/\"//g')
-                    local token=$(echo $data | jq .[$j-1].token)
+                    local token=$(echo $data | jq .[$j-1].token | sed 's/\"//g')
                     if [[ ${array[i - 1]} == $cookie && $token != null ]]; then
-                        export PUSH_PLUS_TOKEN$i="$token"
-                        echo PUSH_PLUS_TOKEN$i="$token"
+                        export PUSH_PLUS_TOKEN$i=$token
+                        echo $PUSH_PLUS_TOKEN1
                         continue
                     fi
                 done
