@@ -1,7 +1,7 @@
 'use strict';
 
 const Koa = require('koa');
-const cors = require('@koa/cors');
+// const cors = require('@koa/cors');
 const Router = require('@koa/router');
 const body = require('koa-body');
 const serve = require('koa-static');
@@ -35,7 +35,7 @@ const handler = async (ctx, next) => {
 };
 
 app.use(serve('static'));
-app.use(cors())
+// app.use(cors());
 app.use(handler);
 app.use(router.routes()).use(router.allowedMethods());
 
