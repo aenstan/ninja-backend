@@ -24,7 +24,6 @@ get_push_tokens() {
                     local token=$(echo $data | jq .[$j-1].token | sed 's/\"//g')
                     if [[ ${array[i - 1]} == $cookie && $token != null ]]; then
                         export PUSH_PLUS_TOKEN$i=$token
-                        echo $PUSH_PLUS_TOKEN1
                         continue
                     fi
                 done
