@@ -8,6 +8,14 @@ Ninja 仅供学习参考使用，请于下载后的 24 小时内删除，本人�
 
 Ninja 仅支持 qinglong 2.8+
 
+## 特性
+
+* 扫码，跳转登录添加/更新 cookie
+
+* 配置 push plus token 实现单用户通知
+
+* 单用户通知黑名单（环境变量 `NOTIFY_SKIP_LIST`，使用 `&`分割，例：`export NOTIFY_SKIP_LIST="东东农场&东东萌宠"`）
+
 ## 文档
 
 1. 容器映射 5701 端口，ninja 目录至宿主机
