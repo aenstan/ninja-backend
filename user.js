@@ -257,6 +257,16 @@ module.exports = class User {
     if (body.code !== 200) {
       throw new UserError(body.message || '删除账户错误，请重试', 240, body.code || 200);
     }
+    exec(
+      `${notifyFile} "Ninja 运行通知" "工具人 ${this.nickName}(${decodeURIComponent(this.pt_pin)}) 删号跑路了"`,
+      (error, stdout, stderr) => {
+        if (error) {
+          console.log(stderr);
+        } else {
+          console.log(stdout);
+        }
+      }
+    );
     return {
       message: '账户已移除',
     };
