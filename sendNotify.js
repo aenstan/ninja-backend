@@ -778,15 +778,15 @@ async function pushPlusSingleNotify(text, desp) {
       const element = despArr[index];
 
       if (element === '') {
-        currentIndex++;
+        currentIndex = -1;
       }
 
-      const findIndex = users.findIndex(
-        (user) => element.includes(user.nickName) || (element.includes(user.pt_pin) && !element.includes('助力'))
-      );
+      if (!element.includes('助力')) {
+        const findIndex = users.findIndex((user) => element.includes(user.nickName) || element.includes(user.pt_pin));
 
-      if (findIndex !== -1) {
-        currentIndex = findIndex;
+        if (findIndex !== -1) {
+          currentIndex = findIndex;
+        }
       }
 
       if (currentIndex >= 0 && currentIndex < users.length) {
