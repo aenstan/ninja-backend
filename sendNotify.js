@@ -759,7 +759,7 @@ function pushPlusNotify(text, desp) {
 
 async function pushPlusSingleNotify(text, desp) {
   try {
-    const notifySkipList = process.env.NOTIFY_SKIP_LIST.split('&') || [];
+    const notifySkipList = process.env.NOTIFY_SKIP_LIST ? process.env.NOTIFY_SKIP_LIST.split('&') : [];
     const titleIndex = notifySkipList.findIndex((item) => item === text);
 
     if (titleIndex !== -1) {
