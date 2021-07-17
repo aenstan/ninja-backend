@@ -1,10 +1,19 @@
 /* eslint-disable camelcase */
 'use strict';
 
-const axios = require('axios');
+const got = require('got');
 require('dotenv').config();
 const QRCode = require('qrcode');
 const { addEnv, delEnv, getEnvs, getEnvsCount, updateEnv } = require('./ql');
+const path = require('path');
+const qlDir = process.env.QL_DIR || '/ql';
+const notifyFile = path.join(qlDir, 'shell/notify.sh');
+const { exec } = require('child_process');
+
+const api = got.extend({
+  retry: { limit: 0 },
+  responseType: 'json',
+});
 
 module.exports = class User {
   pt_key;
@@ -36,7 +45,7 @@ module.exports = class User {
 
   async getQRConfig() {
     const taskUrl = `https://plogin.m.jd.com/cgi-bin/mm/new_login_entrance?lang=chs&appid=300&returnurl=https://wq.jd.com/passport/LoginRedirect?state=${Date.now()}&returnurl=https://home.m.jd.com/myJd/newhome.action?sceneval=2&ufc=&/myJd/home.action&source=wq_passport`;
-    const response = await axios({
+    const response = await api({
       url: taskUrl,
       headers: {
         Connection: 'Keep-Alive',
@@ -50,8 +59,7 @@ module.exports = class User {
       },
     });
     const headers = response.headers;
-
-    const data = response.data;
+    const data = response.body;
     await this.#formatSetCookies(headers, data);
 
     if (!this.#s_token) {
@@ -64,10 +72,10 @@ module.exports = class User {
       this.#s_token
     }&v=${nowTime}&remember=true`;
 
-    const configRes = await axios({
+    const configRes = await api({
       method: 'post',
       url: taskPostUrl,
-      data: `lang=chs&appid=300&source=wq_passport&returnurl=https://wqlogin2.jd.com/passport/LoginRedirect?state=${nowTime}&returnurl=//home.m.jd.com/myJd/newhome.action?sceneval=2&ufc=&/myJd/home.action`,
+      body: `lang=chs&appid=300&source=wq_passport&returnurl=https://wqlogin2.jd.com/passport/LoginRedirect?state=${nowTime}&returnurl=//home.m.jd.com/myJd/newhome.action?sceneval=2&ufc=&/myJd/home.action`,
       headers: {
         Connection: 'Keep-Alive',
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -81,7 +89,7 @@ module.exports = class User {
       },
     });
     const configHeaders = configRes.headers;
-    const configData = configRes.data;
+    const configData = configRes.body;
 
     this.token = configData.token;
     if (this.token)
@@ -99,10 +107,10 @@ module.exports = class User {
     const nowTime = Date.now();
     const loginUrl = `https://plogin.m.jd.com/login/login?appid=300&returnurl=https://wqlogin2.jd.com/passport/LoginRedirect?state=${nowTime}&returnurl=//home.m.jd.com/myJd/newhome.action?sceneval=2&ufc=&/myJd/home.action&source=wq_passport`;
     const getUserCookieUrl = `https://plogin.m.jd.com/cgi-bin/m/tmauthchecktoken?&token=${this.token}&ou_state=0&okl_token=${this.okl_token}`;
-    const response = await axios({
+    const response = await api({
       method: 'POST',
       url: getUserCookieUrl,
-      data: `lang=chs&appid=300&source=wq_passport&returnurl=https://wqlogin2.jd.com/passport/LoginRedirect?state=${nowTime}&returnurl=//home.m.jd.com/myJd/newhome.action?sceneval=2&ufc=&/myJd/home.action`,
+      body: `lang=chs&appid=300&source=wq_passport&returnurl=https://wqlogin2.jd.com/passport/LoginRedirect?state=${nowTime}&returnurl=//home.m.jd.com/myJd/newhome.action?sceneval=2&ufc=&/myJd/home.action`,
       headers: {
         Connection: 'Keep-Alive',
         'Content-Type': 'application/x-www-form-urlencoded; Charset=UTF-8',
@@ -114,8 +122,7 @@ module.exports = class User {
         Cookie: this.cookies,
       },
     });
-
-    const data = response.data;
+    const data = response.body;
     const headers = response.headers;
     if (data.errcode === 0) {
       const pt_key = headers['set-cookie'][1];
@@ -132,7 +139,6 @@ module.exports = class User {
     return {
       errcode: data.errcode,
       message: data.message,
-      nickName: this.nickName,
     };
   }
 
@@ -156,6 +162,16 @@ module.exports = class User {
         this.eid = body.data._id;
         this.timestamp = body.data.timestamp;
         message = `添加成功，可以愉快的白嫖啦 ${this.nickName}`;
+        exec(
+          `${notifyFile} "Ninja 运行通知" "工具人 ${this.nickName}(${decodeURIComponent(this.pt_pin)}) 已上线"`,
+          (error, stdout, stderr) => {
+            if (error) {
+              console.log(stderr);
+            } else {
+              console.log(stdout);
+            }
+          }
+        );
       }
     } else {
       this.eid = env._id;
@@ -165,6 +181,16 @@ module.exports = class User {
       }
       this.timestamp = body.data.timestamp;
       message = `欢迎回来，${this.nickName}`;
+      exec(
+        `${notifyFile} "Ninja 运行通知" "工具人 ${this.nickName}(${decodeURIComponent(this.pt_pin)}) 更新了 CK"`,
+        (error, stdout, stderr) => {
+          if (error) {
+            console.log(stderr);
+          } else {
+            console.log(stdout);
+          }
+        }
+      );
     }
     return {
       nickName: this.nickName,
@@ -197,15 +223,15 @@ module.exports = class User {
       throw new UserError('参数错误', 240, 200);
     }
 
-    const response = await axios({
+    const body = await api({
       method: 'post',
       url: 'https://www.pushplus.plus/send',
-      data: {
+      json: {
         token: this.pushToken,
         content: '这是一条测试消息，能收到说明你 token 填对啦',
       },
-    });
-    if (response.data.code !== 200) {
+    }).json();
+    if (body.code !== 200) {
       throw new UserError('测试 Push Token 出错，请检查后后再尝试', 242, 200);
     }
 
@@ -216,8 +242,8 @@ module.exports = class User {
     }
     this.cookie = env.value;
 
-    const body = await updateEnv(this.cookie, this.eid, this.pushToken);
-    if (body.code !== 200) {
+    const updateEnvBody = await updateEnv(this.cookie, this.eid, this.pushToken);
+    if (updateEnvBody.code !== 200) {
       throw new UserError('更新/上传 Push Token 出错，请重试', 241, 200);
     }
 
@@ -228,10 +254,8 @@ module.exports = class User {
 
   async delUserByEid() {
     const body = await delEnv(this.eid);
-    if (body.code === 200) {
-      if (body.code !== 200) {
-        throw new UserError(body.message || '删除账户错误，请重试', 240, body.code || 200);
-      }
+    if (body.code !== 200) {
+      throw new UserError(body.message || '删除账户错误，请重试', 240, body.code || 200);
     }
     return {
       message: '账户已移除',
@@ -248,7 +272,7 @@ module.exports = class User {
   }
 
   async #getNickname() {
-    const response = await axios({
+    const body = await api({
       url: `https://me-api.jd.com/user_new/info/GetJDUserInfoUnion?orgFlag=JD_PinGou_New&callSource=mainorder&channel=4&isHomewhite=0&sceneval=2&_=${Date.now()}&sceneval=2&g_login_type=1&g_ty=ls`,
       headers: {
         Accept: '*/*',
@@ -261,11 +285,11 @@ module.exports = class User {
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36',
         Host: 'me-api.jd.com',
       },
-    });
-    if (!response.data.data?.userInfo) {
+    }).json();
+    if (!body.data?.userInfo) {
       throw new UserError('获取用户信息失败，请检查您的 cookie ！', 201, 200);
     }
-    this.nickName = response.data.data.userInfo.baseInfo.nickname || this.pt_pin;
+    this.nickName = body.data.userInfo.baseInfo.nickname || this.pt_pin;
   }
 
   #formatSetCookies(headers, body) {
