@@ -11,7 +11,6 @@
  */
 
 const querystring = require('querystring');
-const got = require('got');
 const $ = new Env();
 const timeout = 15000; //超时时间(单位毫秒)
 // =======================================go-cqhttp通知设置区域===========================================
@@ -33,6 +32,8 @@ let SCKEY = '';
 let BARK_PUSH = '';
 //BARK app推送铃声,铃声列表去APP查看复制填写
 let BARK_SOUND = '';
+//BARK app推送消息的分组, 默认为"QingLong"
+let BARK_GROUP = 'QingLong';
 
 // =======================================telegram机器人通知设置区域===========================================
 //此处填你telegram bot 的Token，telegram机器人通知推送必填项.例如：1077xxx4424:AAFjv0FcqxxxxxxgEMGfi22B4yh15R5uw
@@ -61,14 +62,14 @@ let QYWX_KEY = '';
 
 // =======================================企业微信应用消息通知设置区域===========================================
 /*
- 此处填你企业微信应用消息的值(详见文档 https://work.weixin.qq.com/api/doc/90000/90135/90236)
- 环境变量名 QYWX_AM依次填入 corpid,corpsecret,touser(注:多个成员ID使用|隔开),agentid,消息类型(选填,不填默认文本消息类型)
- 注意用,号隔开(英文输入法的逗号)，例如：wwcff56746d9adwers,B-791548lnzXBE6_BWfxdf3kSTMJr9vFEPKAbh6WERQ,mingcheng,1000001,2COXgjH2UIfERF2zxrtUOKgQ9XklUqMdGSWLBoW_lSDAdafat
- 可选推送消息类型(推荐使用图文消息（mpnews）):
- - 文本卡片消息: 0 (数字零)
- - 文本消息: 1 (数字一)
- - 图文消息（mpnews）: 素材库图片id, 可查看此教程(http://note.youdao.com/s/HMiudGkb)或者(https://note.youdao.com/ynoteshare1/index.html?id=1a0c8aff284ad28cbd011b29b3ad0191&type=note)
- */
+此处填你企业微信应用消息的值(详见文档 https://work.weixin.qq.com/api/doc/90000/90135/90236)
+环境变量名 QYWX_AM依次填入 corpid,corpsecret,touser(注:多个成员ID使用|隔开),agentid,消息类型(选填,不填默认文本消息类型)
+注意用,号隔开(英文输入法的逗号)，例如：wwcff56746d9adwers,B-791548lnzXBE6_BWfxdf3kSTMJr9vFEPKAbh6WERQ,mingcheng,1000001,2COXgjH2UIfERF2zxrtUOKgQ9XklUqMdGSWLBoW_lSDAdafat
+可选推送消息类型(推荐使用图文消息（mpnews）):
+- 文本卡片消息: 0 (数字零)
+- 文本消息: 1 (数字一)
+- 图文消息（mpnews）: 素材库图片id, 可查看此教程(http://note.youdao.com/s/HMiudGkb)或者(https://note.youdao.com/ynoteshare1/index.html?id=1a0c8aff284ad28cbd011b29b3ad0191&type=note)
+*/
 let QYWX_AM = '';
 
 // =======================================iGot聚合推送通知设置区域===========================================
@@ -115,6 +116,9 @@ if (process.env.BARK_PUSH) {
   if (process.env.BARK_SOUND) {
     BARK_SOUND = process.env.BARK_SOUND;
   }
+  if (process.env.BARK_GROUP) {
+    BARK_GROUP = process.env.BARK_GROUP;
+  }
 } else {
   if (BARK_PUSH && BARK_PUSH.indexOf('https') === -1 && BARK_PUSH.indexOf('http') === -1) {
     //兼容BARK本地用户只填写设备码的情况
@@ -157,7 +161,6 @@ if (process.env.PUSH_PLUS_TOKEN) {
 if (process.env.PUSH_PLUS_USER) {
   PUSH_PLUS_USER = process.env.PUSH_PLUS_USER;
 }
-
 //==========================云端环境变量的判断与接收=========================
 
 /**
@@ -352,7 +355,7 @@ function BarkNotify(text, desp, params = {}) {
       const options = {
         url: `${BARK_PUSH}/${encodeURIComponent(text)}/${encodeURIComponent(
           desp
-        )}?sound=${BARK_SOUND}&${querystring.stringify(params)}`,
+        )}?sound=${BARK_SOUND}&group=${BARK_GROUP}&${querystring.stringify(params)}`,
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
@@ -711,40 +714,6 @@ function iGotNotify(text, desp, params = {}) {
   });
 }
 
-async function pushPlusSingleNotify(text, desp) {
-  try {
-    let matchAll = desp.matchAll(/.*?账号(\d+)*】?.*?\n\n/gs);
-    matchAll = Array.from(matchAll);
-    await Promise.all(
-      matchAll.map(async (item) => {
-        const token = process.env[`PUSH_PLUS_TOKEN${item[1]}`];
-        if (token) {
-          const content = item[0].replace(/[\n\r]/g, '<br>'); // 默认为html, 不支持plaintext
-          const response = await got.post('https://www.pushplus.plus/send', {
-            json: {
-              token: token,
-              title: `${text}`,
-              content,
-            },
-            responseType: 'json',
-            headers: {
-              'Content-Type': ' application/json',
-            },
-            timeout,
-          });
-          if (response.body.code === 200) {
-            console.log(`push+ 发送用户 ${item[1]} 通知消息完成。\n`);
-          } else {
-            console.log(`push+ 发送用户 ${item[1]} 通知消息失败：${response.body.msg}\n`);
-          }
-        }
-      })
-    );
-  } catch (err) {
-    console.log(err);
-  }
-}
-
 function pushPlusNotify(text, desp) {
   return new Promise((resolve) => {
     if (PUSH_PLUS_TOKEN) {
@@ -786,6 +755,84 @@ function pushPlusNotify(text, desp) {
       resolve();
     }
   });
+}
+
+async function pushPlusSingleNotify(text, desp) {
+  try {
+    const notifySkipList = process.env.NOTIFY_SKIP_LIST.split('&') || [];
+    const titleIndex = notifySkipList.findIndex((item) => item === text);
+
+    if (titleIndex !== -1) {
+      console.log(`${text} 在推送黑名单中，已跳过推送`);
+      return;
+    }
+
+    const got = require('got');
+
+    const body = await got('http://localhost:5701/api/users').json();
+    const users = body.data;
+    const despArr = desp.split('\n');
+    let currentIndex;
+
+    for (let index = 0; index < despArr.length; index++) {
+      const element = despArr[index];
+
+      if (element === '') {
+        currentIndex++;
+      }
+
+      const findIndex = users.findIndex(
+        (user) => element.includes(user.nickName) || (element.includes(user.pt_pin) && !element.includes('助力'))
+      );
+
+      if (findIndex !== -1) {
+        currentIndex = findIndex;
+      }
+
+      if (currentIndex >= 0 && currentIndex < users.length) {
+        if (!users[currentIndex].message) {
+          users[currentIndex].message = '';
+        }
+
+        users[currentIndex].message += element;
+
+        if (element !== '') {
+          users[currentIndex].message += '\n';
+        }
+      }
+    }
+
+    await Promise.all(
+      users.map(async (user) => {
+        const name = user.nickName || user.pt_pin;
+        if (!user.message || user.message === '' || !user.pushToken) {
+          console.log(`用户 ${name} 未配置 token 或无消息，已跳过\n`);
+          return;
+        }
+        const content = user.message.replace(/[\n\r]/g, '<br>'); // 默认为html, 不支持plaintext
+        const response = await got.post('https://www.pushplus.plus/send', {
+          json: {
+            token: token,
+            title: `${text}`,
+            content,
+          },
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          responseType: 'json',
+          timeout,
+          retry: { limit: 0 },
+        });
+        if (response.body.code === 200) {
+          console.log(`push+ 发送用户 ${name} 通知消息完成。\n`);
+        } else {
+          console.log(`push+ 发送用户 ${name} 通知消息失败：${response.body.msg}\n`);
+        }
+      })
+    );
+  } catch (err) {
+    console.log(err);
+  }
 }
 
 module.exports = {

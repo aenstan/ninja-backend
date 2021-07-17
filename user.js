@@ -29,17 +29,23 @@ module.exports = class User {
   QRCode;
   #s_token;
 
-  constructor({ token, okl_token, cookies, pt_key, pt_pin, eid, pushToken }) {
+  constructor({ token, okl_token, cookies, pt_key, pt_pin, cookie, eid, pushToken }) {
     this.token = token;
     this.okl_token = okl_token;
     this.cookies = cookies;
     this.pt_key = pt_key;
     this.pt_pin = pt_pin;
+    this.cookie = cookie;
     this.eid = eid;
     this.pushToken = pushToken;
 
     if (pt_key && pt_pin) {
       this.cookie = 'pt_key=' + this.pt_key + ';pt_pin=' + this.pt_pin + ';';
+    }
+
+    if (cookie) {
+      this.pt_pin = cookie.match(/pt_pin=(.*?);/)[1];
+      this.pt_key = cookie.match(/pt_key=(.*?);/)[1];
     }
   }
 
@@ -279,6 +285,20 @@ module.exports = class User {
       marginCount: allowCount >= 0 ? allowCount : 0,
       allowAdd: Boolean(process.env.ALLOW_ADD) || true,
     };
+  }
+
+  static async getUsers() {
+    const envs = await getEnvs();
+    const result = envs.map(async (env) => {
+      const user = new User({ cookie: env.value, pushToken: env.remarks });
+      await user.#getNickname();
+      return {
+        pt_pin: user.pt_pin,
+        nickName: user.nickName,
+        pushToken: user.pushToken,
+      };
+    });
+    return Promise.all(result);
   }
 
   async #getNickname() {

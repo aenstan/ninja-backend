@@ -42,7 +42,7 @@ app.use(router.routes()).use(router.allowedMethods());
 router.get('/api/status', (ctx) => {
   ctx.body = {
     code: 200,
-    message: 'Ninja is already.'
+    message: 'Ninja is already.',
   };
 });
 
@@ -99,6 +99,18 @@ router.post('/api/uploadpushtoken', body(), async (ctx) => {
   const user = new User({ eid, pushToken });
   const data = await user.updateToken();
   ctx.body.data = data;
+});
+
+router.get('/api/users', async (ctx) => {
+  if (ctx.host.startsWith('localhost')) {
+    const data = await User.getUsers();
+    ctx.body.data = data;
+  } else {
+    ctx.body = {
+      code: 401,
+      message: '该接口仅能通过 localhost 访问',
+    };
+  }
 });
 
 app.listen(5701);
