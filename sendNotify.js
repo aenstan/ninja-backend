@@ -812,7 +812,7 @@ async function pushPlusSingleNotify(text, desp) {
         const content = user.message.replace(/[\n\r]/g, '<br>'); // 默认为html, 不支持plaintext
         const response = await got.post('https://www.pushplus.plus/send', {
           json: {
-            token: token,
+            token: user.pushToken,
             title: `${text}`,
             content,
           },
