@@ -802,13 +802,13 @@ async function pushPlusSingleNotify(text, desp) {
       }
     }
 
-    await Promise.all(
-      users.map(async (user) => {
-        const name = user.nickName || user.pt_pin;
-        if (!user.message || user.message === '' || !user.pushToken) {
-          console.log(`用户 ${name} 未配置 token 或无消息，已跳过\n`);
-          return;
-        }
+    for await (const user of users) {
+      const name = user.nickName || user.pt_pin;
+      if (!user.message || user.message === '' || !user.pushToken) {
+        // console.log(`用户 ${name} 未配置 token 或无消息，已跳过\n`);
+        continue;
+      }
+      try {
         const content = user.message.replace(/[\n\r]/g, '<br>'); // 默认为html, 不支持plaintext
         const response = await got.post('https://www.pushplus.plus/send', {
           json: {
@@ -828,11 +828,23 @@ async function pushPlusSingleNotify(text, desp) {
         } else {
           console.log(`push+ 发送用户 ${name} 通知消息失败：${response.body.msg}\n`);
         }
-      })
-    );
+      } catch (error) {
+        console.log(`push+ 发送用户 ${name} 通知消息失败：${error.message}\n`);
+      }
+      await wait(1000);
+    }
   } catch (err) {
     console.log(err);
   }
+}
+
+function wait(time) {
+  console.log('Waiting for ' + time + ' seconds');
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      resolve(true);
+    }, time);
+  });
 }
 
 module.exports = {
